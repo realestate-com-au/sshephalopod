@@ -1,0 +1,105 @@
+swagger: '2.0'
+info:
+  version: 0.0.1
+  title: 'SSHephalopod API'
+paths:
+  /metadata:
+    get:
+      produces:
+        - "application/xml"
+      description: |
+        Gets SAML Service Provider (SP) metadata to provide information about the SP's X.509 certificate, endpoints, etc.
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            title: MetadataResponse
+            type: string
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: "%%METADATA_NAME%%/invocations"
+        credentials: "%%EXECUTION_ROLE%%"
+        httpMethod: POST
+        responses:
+          default:
+            statusCode: "200"
+  /signing:
+    get:
+      produces:
+        - "application/xml"
+      description: |
+        Gets an initial AuthnRequest, to be handed off to the SAML IdP which will authenticate the user
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            title: AuthnRequest
+            type: string
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: "%%PREAUTH_NAME%%/invocations"
+        credentials: "%%EXECUTION_ROLE%%"
+        requestTemplates:
+          "application/json": "{\"stage\":\"$context.stage\",\"api-id\":\"$context.apiId\",\"resource-path\":\"$context.resourcePath\",\"IdpMetadataEndpoint\":\"%%IDP_ENDPOINT%%\"}"
+        httpMethod: POST
+        responses:
+          default:
+            statusCode: "200"
+    post:
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      description: |
+        Takes a SAML Assertion (base64 encoded), an SSH public key, a username and a hostname, and returns the SSH public key signed by the private key of the sshephalopod CA.
+      parameters:
+        - name: signingRequest
+          in: body
+          description: A JSON object containing the SAML Assertion and SSH pubkey to sign
+          required: true
+          schema:
+            $ref: "#/definitions/SigningRequest"
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: "#/definitions/SignedResponse"
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: "%%REQUEST_NAME%%/invocations"
+        credentials: "%%EXECUTION_ROLE%%"
+        requestTemplates:
+          "application/x-www-form-urlencoded": "{\"IdpMetadataEndpoint\":\"%%IDP_ENDPOINT%%\",\"KeypairBucket\":\"%%KEYPAIR_BUCKET%%\",\"body\":$input.json('$')}"
+        httpMethod: POST
+        responses:
+          default:
+            statusCode: "200"
+definitions:
+  SigningRequest:
+    properties:
+      SAMLResponse:
+        type: string
+        description: The SAML Assertion from the IdP, base64-encoded
+      SSHPublicKey:
+        type: string
+        description: The requesting user's SSH pubkey
+      Username:
+        type: string
+        description: The username that the signature will permit logins to on the destination (trusting) host
+      Hostname:
+        type: string
+        description: The destination hostname that the signature will be valid for (optional)
+  SignedResponse:
+    properties:
+      Result:
+        type: boolean
+        description: Whether or not the signing request was successful.
+      Message:
+        type: string
+        description: Additional information about the signing request.
+      Expiry:
+        type: string
+        description: The ISO8601-formatted timestamp when the signature will expire
+      SignedKey:
+        type: string
+        description: An SSH public key signed by the private key of the sshephalopod CA

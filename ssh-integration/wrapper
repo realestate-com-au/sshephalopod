@@ -1,0 +1,221 @@
+#!/bin/bash
+#
+# Begin the SAML dance
+#
+
+if [ $# -ne 2 ]; then
+    echo "usage: $0 <username> <host-or-domain>"
+    exit 1
+fi
+
+STAGE=prod
+
+UNAME=$1
+HOST=$2
+
+if ! type -P dig >/dev/null; then
+    echo "You need 'dig' installed"
+    exit 1
+fi
+
+if ! type -p jq >/dev/null; then
+    echo "You need 'jq' installed"
+    exit 1
+fi
+
+find_domain_for_name () {
+    local name=$1
+    local DOMAIN=""
+
+    if [ -n "$( dig +short $name )" ]; then
+        # it's a host, so chop the hostname part off
+        echo $name | sed -e "s/^[^.]*\.\(.*\)/\1/"
+        return
+    fi
+
+    if [ -n "$( dig +short soa $name )" ]; then
+        # it's a DNS domain, so just return it
+        echo $name
+        return
+    fi
+
+    name=$( echo $name | sed -e "s/^[^.]*\.\(.*\)/\1/" )
+    if [ -n "$( dig +short soa $name )" ]; then
+        # it's a DNS domain, so just return it
+        echo $name
+        return
+    fi
+
+    # At this point it isn't a hostname or a valid
+    # DNS domain, so return nothing
+    return
+}
+
+find_sp_for_domain () {
+    local domain=$1
+
+    SRV=$( dig +short srv _sshephalopod-ca._tcp.$domain )
+    if [ -n "$SRV" ]; then
+        SP=$( echo $SRV | awk '{ print $4 }' )
+        echo https://$SP/$STAGE/signing
+        return
+    fi
+}
+
+DOMAIN=$( find_domain_for_name $HOST )
+if [ -z "$DOMAIN" ]; then
+    echo "Cannot find DNS domain of $HOST"
+    exit 1
+fi
+
+SP=$( find_sp_for_domain $DOMAIN )
+if [ -z "$SP" ]; then
+    echo "Cannot find SP for $DOMAIN"
+    exit 1
+fi
+
+echo "Using SP $SP"
+
+IDP_TYPE=okta
+IDP_NAME="REA Okta"
+
+
+if [ -f $HOME/.ssh/id_rsa.pub ]; then
+    SSH_KEY=$HOME/.ssh/id_rsa.pub
+else
+    echo "You must have an SSH RSA key; please use 'ssh-keygen -t rsa -b 2048' to create one"
+    exit 1
+fi
+
+if type -P curl >/dev/null; then
+    GETTER=curl
+    GETTER_ARGS="-s"
+elif type -P wget >/dev/null; then
+    GETTER=wget
+    GETTER_ARGS="-q -O -"
+else
+    echo "You must have either wget or curl installed"
+    exit 1
+fi
+
+KERNEL=$( uname -s )
+case $KERNEL in
+    Linux)  SHASUM=sha256sum ;;
+    Darwin) SHASUM="shasum -a 256" ;;
+    *)      echo "$KERNEL not supported"; exit 1 ;;
+esac
+
+CKSUM=$( $SHASUM $SSH_KEY | awk '{ print $1 }' )
+
+# Post in the initial request for signing to get a location for auth
+
+AUTHN_REQUEST=$( eval echo -e $( $GETTER $GETTER_ARGS "$SP?cksum=$CKSUM" ) )
+RET=$?
+
+if [ $RET -ne 0 ]; then
+    echo "Could not retrieve AuthnRequest ($RET)"
+    [ -n "$AUTHN_REQUEST" ] && echo "$GETTER returned $AUTHN_REQUEST"
+    exit 1
+fi
+
+echo $AUTHN_REQUEST > /tmp/authn_request
+
+do_okta_dance () {
+    local IDP_URL=$1
+    RESP=$( ./okta-auth "$IDP_URL" )
+    RET=$?
+
+    if [ $RET -ne 0 ]; then
+        echo "Could not talk to login endpoint ($RET)"
+        [ -n "$RESP" ] && echo "Response: $RESP"
+        exit 1
+    else
+        echo "$RESP"
+    fi
+}
+
+do_shibboleth_dance () {
+    local IDP_URL=$1
+    local NEW_REQ=$2
+    # Need to strip off the XML tag
+    STRIPPED_REQ=$( echo "$NEW_REQ" | sed -e 's/^<?xml[^>]*>//' )
+    RESP=$( ./shibboleth-auth "$IDP_URL" "$STRIPPED_REQ" )
+    RET=$?
+
+    if [ $RET -ne 0 ]; then
+        echo "Could not talk to login endpoint ($RET)"
+        [ -n "$RESP" ] && echo "Response: $RESP"
+        exit 1
+    else
+        echo "$RESP"
+    fi
+}
+
+
+# Pull it apart into its fragments
+
+urldecode () {
+    local url_encoded="${1//+/ }";
+    printf '%b' "${url_encoded//%/\\x}"
+}
+
+IDP_URL=$( echo "$AUTHN_REQUEST" | sed -e 's/.*Destination="\([^"]*\)" .*/\1/' )
+ASSERTION_CONSUMER=$( echo "$AUTHN_REQUEST" | sed -e 's/.*AssertionConsumerServiceURL="\([^ ]*\)" .*/\1/' )
+
+echo "Beginning the SAML dance ..."
+echo "Please sign in to $IDP_NAME"
+
+case $IDP_TYPE in
+    okta)   ASSERTION=$( do_okta_dance "$IDP_URL" )
+            RET=$?
+            echo
+            ;;
+    shibboleth)
+            ASSERTION=$( do_shibboleth_dance "$IDP_URL" "$AUTHN_REQUEST" )
+            RET=$?
+            echo
+            ;;
+    *)      echo "IDP type $IDP_TYPE not yet supported"
+            exit 1
+            ;;
+esac
+
+if [ $RET -ne 0 ]; then
+    echo "ERROR doing the saml dance: $ASSERTION"
+    exit 1
+elif echo "$ASSERTION" | grep -q 'Authorization Required'; then
+    echo "ERROR: Invalid username or password"
+    exit 1
+fi
+
+# Encode the assertion for wrapping
+ASSERTION_ENCODED=$( echo -n "$ASSERTION" | base64 -w 0 )
+PUBKEY=$( awk '{ print $1, $2 }' < $SSH_KEY )
+case $GETTER in
+    curl)
+        echo "{\"SAMLResponse\":\"$ASSERTION_ENCODED\",\"SSHPublicKey\":\"$PUBKEY\",\"Username\":\"$UNAME\",\"Hostname\":\"$HOST\"}" > /tmp/foo
+        RESP=$( $GETTER $GETTER_ARGS \
+                -XPOST \
+                -d "{\"SAMLResponse\":\"$ASSERTION_ENCODED\",\"SSHPublicKey\":\"$PUBKEY\",\"Username\":\"$UNAME\",\"Hostname\":\"$HOST\"}" \
+                $ASSERTION_CONSUMER )
+        RET=$?
+        ;;
+    wget)
+        echo "Not yet"
+        exit 1
+        ;;
+esac
+
+if [ $RET -ne 0 ]; then
+    echo "Signing request failed ($RET): $RESP"
+    exit 1
+elif echo "$RESP" | jq -e ".SignedKey" >/dev/null; then
+    echo "$RESP" | jq -r '.SignedKey' | base64 -d > $HOME/.ssh/id_rsa-cert.pub
+    echo "Signing request succeeded: please log in with 'ssh $UNAME@$HOST'"
+    echo "If you are using ssh-agent, please run 'ssh-add' now"
+else
+    ERROR=$( echo "$RESP" | jq -r '.errorMessage' )
+    [ -z "$ERROR" ] && ERROR="Something unspecified went wrong: $RESP"
+    echo "ERROR: $ERROR"
+    exit 1
+fi

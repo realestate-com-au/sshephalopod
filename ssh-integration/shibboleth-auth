@@ -1,0 +1,51 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+    echo "usage: $0 <idp-url> <authn-request>"
+    exit 1
+fi
+
+IDP_URL="$1"
+AUTHN_REQUEST="$2"
+envelope='<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"><S:Body>'"$AUTHN_REQUEST"'</S:Body></S:Envelope>'
+
+# echo "Envelope is: $envelope" >&2
+
+read -p "Username: " username
+if [ -z "$username" ]; then
+    echo "ERROR: You must supply a username"
+    exit 1
+fi
+
+read -s -p "Password: " password
+if [ -z "$password" ]; then
+    echo "ERROR: You must supply a password"
+    exit 1
+fi
+
+if type -P mktemp >/dev/null; then
+    MK_TEMP=mktemp
+elif type -P tempfile >/dev/null; then
+    MK_TEMP=tempfile
+else
+    echo "No mktemp or tempfile"
+    exit 1
+fi
+
+COOKIE_FILE=$( $MK_TEMP )
+
+cleanup () {
+    rm -f $COOKIE_FILE
+}
+
+trap cleanup EXIT
+
+auth_str=$( echo -n "$username:$password" | base64 )
+
+curl \
+    -b $COOKIE_FILE \
+    -c $COOKIE_FILE \
+    -H "Authorization: Basic $auth_str" \
+    -s \
+    -d "$envelope" \
+    $IDP_URL

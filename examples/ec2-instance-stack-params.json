@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "DNSDomain",
+    "ParameterValue": "my-sshephalopod-domain.com"
+  },
+  {
+    "ParameterKey": "VpcId",
+    "ParameterValue": "vpc-abcd1234"
+  }
+]

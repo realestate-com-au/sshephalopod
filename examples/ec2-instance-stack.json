@@ -1,0 +1,94 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "An example EC2 instance set up for sshephalopod authentication",
+
+  "Parameters": {
+    "DNSDomain": {
+      "Type": "String",
+      "Description": "The DNS domain to use to retrieve the sshephalopod CA certificate"
+    },
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id",
+      "Description": "The VPC to deploy the instance into"
+    }
+  },
+
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": { "AMI": "ami-e3106686" },
+      "us-west-1": { "AMI": "ami-cd3aff89" },
+      "us-west-2": { "AMI": "ami-9ff7e8af" },
+      "eu-west-1": { "AMI": "ami-69b9941e" },
+      "eu-central-1": { "AMI": "ami-daaeaec7" },
+      "ap-northeast-1": { "AMI": "ami-9a2fb89a" },
+      "ap-southeast-1": { "AMI": "ami-52978200" },
+      "ap-southeast-2": { "AMI": "ami-c11856fb" },
+      "sa-east-1": { "AMI": "ami-3b0c9926" }
+    }
+  },
+
+  "Resources": {
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Permit inbound SSH",
+        "VpcId": { "Ref": "VpcId" },
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": 22,
+            "ToPort": 22,
+            "IpProtocol": "tcp"
+          }
+        ]
+      }
+    },
+
+    "ExampleEC2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": { "Fn::FindInMap": [ "AWSRegion2AMI", { "Ref": "AWS::Region" }, "AMI" ] },
+        "InstanceType": "t2.micro",
+        "SecurityGroupIds": [ { "Ref": "InstanceSecurityGroup" } ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "sshephalopod example instance"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\n",
+                "CERT=$( eval echo $( dig +short txt sshephalopod-ca-cert.",
+                                  { "Ref": "DNSDomain" }, " ) )\n",
+                "if [ -z \"$CERT\" ]; then\n",
+                "    echo ERROR cannot find CA cert\n",
+                "    exit 1\n",
+                "fi\n",
+
+                "echo $CERT > /etc/ssh/trusted_certs\n",
+                "cat >> /etc/ssh/sshd_config <<EoM\n",
+                "\n",
+                "LogLevel VERBOSE\n",
+                "TrustedUserCAKeys /etc/ssh/trusted_certs\n",
+                "EoM\n",
+
+                "service sshd restart\n"
+              ]
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "Outputs": {
+    "EC2InstanceIP": {
+      "Description": "The IP address of the created EC2 instance",
+      "Value": { "Fn::GetAtt": [ "ExampleEC2Instance", "PublicIp" ] }
+    }
+  }
+}

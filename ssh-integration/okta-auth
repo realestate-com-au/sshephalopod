@@ -1,0 +1,103 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "usage: $0 <IDP-endpoint-URL>"
+    exit 1
+fi
+
+IDP_ENDPOINT=$1
+LOGIN_ENDPOINT="$( echo "$IDP_ENDPOINT" | cut -d/ -f1-3 )/login/do-login"
+
+# No config below this line
+temp_file_maker=$( type -P tempfile 2>/dev/null )
+
+if [ -z "$temp_file_maker" ] ; then
+    temp_file_maker=$( type -P mktemp )
+    if [ ! $temp_file_maker ] ; then
+        echo "This script requires tempfile or mktemp. Aborting." >&2
+        exit 1
+    fi
+fi
+
+read -p "Username: " login
+if [ -z "$login" ]; then
+    echo "No username, cannot proceed" >&2
+    exit 1
+fi
+
+read -p "Password: " -s password
+if [ -z "$password" ]; then
+    echo "No password, cannot proceed" >&2
+    exit 1
+fi
+echo
+
+cookie_file=$( $temp_file_maker )
+
+cleanup () {
+    [ -z "$cookie_file" ] && return
+    rm -f $cookie_file
+}
+
+trap cleanup EXIT
+
+login_response=$(
+    curl                                                          \
+        $CURL_ARGS                                                \
+        -s                                                        \
+        -X POST                                                   \
+        -A "Mozilla/5.0 (compatible;  MSIE 7.01; Windows NT 5.0)" \
+        -H "Cache-Control: no-cache"                              \
+        -c $cookie_file                                           \
+        -b $cookie_file                                           \
+        --data-urlencode "hidden-password-1="                     \
+        --data-urlencode "hidden-password-2=test"                 \
+        --data-urlencode "username=$login"                        \
+        --data-urlencode "password=$password"                     \
+        --data-urlencode "isChromeOs="                            \
+        --data-urlencode "login=Sign+In"                          \
+        $LOGIN_ENDPOINT 2>&1
+)
+RET=$?
+
+if [ $RET -ne 0 ]; then
+    echo "Could not talk to login endpoint ($RET)"
+    [ -n "$login_response" ] && echo "Curl returned $login_response"
+    exit 1
+fi
+
+idp_response=$(
+    curl \
+        $CURL_ARGS \
+        -s \
+        -X POST \
+        -A "Mozilla/5.0 (compatible;  MSIE 7.01; Windows NT 5.0)" \
+        -H "Cache-Control: no-cache" \
+        -c $cookie_file \
+        -b $cookie_file \
+        $IDP_ENDPOINT 2>&1
+)
+RET=$?
+
+if [ $RET -ne 0 ]; then
+    echo "Could not talk to IDP ($RET)" 2>&1
+    [ -n "$idp_response" ] && echo "Curl returned $idp_response"
+    exit 1
+fi
+
+# echo "Got IDP response: $idp_response" > /tmp/okta-auth-resp
+
+urldecode () {
+    local url_encoded="${1//+/ }";
+    printf '%b' "${url_encoded//%/\\x}"
+}
+
+urldecode $( 
+    echo $idp_response | \
+        sed -e 's/.*SAMLResponse\([^>]*\).*/\1/' -e 's/.*value="\(.*\)".*/\1/' -e 's/\&#x\([0-9a-fA-F][0-9a-fA-F]\);/%\1/g'
+
+) | base64 -d
+
+echo
+
+rm -f $cookie_file
