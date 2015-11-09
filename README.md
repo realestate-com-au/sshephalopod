@@ -139,3 +139,9 @@ For an EC2 instance, include the following code in your `UserData`:
     ]
   }
 ```
+
+# License
+
+`sshephalopod` is licensed under the MIT license; please see the file `LICENSE` for
+details.
+
