@@ -77,7 +77,7 @@ fi
 echo "Using SP $SP"
 
 IDP_TYPE=okta
-IDP_NAME="REA Okta"
+IDP_NAME="Okta"
 
 
 if [ -f $HOME/.ssh/id_rsa.pub ]; then
