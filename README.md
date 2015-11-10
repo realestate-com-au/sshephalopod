@@ -140,6 +140,41 @@ For an EC2 instance, include the following code in your `UserData`:
   }
 ```
 
+## Using it
+
+With a deployed sshephalopod and a configured Okta:
+
+* Have an SSH public key in `$HOME/.ssh/id_rsa.pub`
+* Run the wrapper script:
+
+    ```
+    localhost$ cd ssh-integration && ./wrapper ec2-user domain.where.SRV.record.is
+    Using SP https://cnsjdhfbs2.execute-api.us-west-2.amazonaws.com/prod/signing
+    Beginning the SAML dance ...
+    Please sign in to Okta
+    Username: my.username
+    Password: ********
+    Signing request succeeded: please log in with 'ssh ec2-user@domain.where.SRV.record.is'
+    If you are using ssh-agent, please run 'ssh-add' now
+    ```
+* If you're using `ssh-agent`, run `ssh-add` to add your private key and the signed
+  certificate to your agent.  **Note:** `gnome-keyring-daemon` does NOT support
+  RSA-certificate signed SSH keys, you have to use OpenSSH's ssh-agent)
+
+    ```
+    localhost$ ssh-add -l
+    The agent has no identities.
+
+    localhost$ ssh-add
+    Enter passphrase for /home/user/.ssh/id_rsa: ********
+    Identity added: /home/user/.ssh/id_rsa (/home/user/.ssh/id_rsa)
+    Certificate added: /home/user/.ssh/id_rsa-cert.pub (my.username@okta-domain)
+
+    localhost$ ssh-add -l
+    4096 SHA256:nBwKsuL3+RRoyV1mw6N4GZJ8I/o2akuit8QXCm1XUBQ /home/user/.ssh/id_rsa (RSA)
+    4096 SHA256:nBwKsuL3+RRoyV1mw6N4GZJ8I/o2akuit8QXCm1XUBQ /home/user/.ssh/id_rsa (RSA-CERT)
+    ```
+
 # License
 
 `sshephalopod` is licensed under the MIT license; please see the file `LICENSE` for
