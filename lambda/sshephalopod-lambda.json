@@ -281,6 +281,7 @@
     "SigningPreAuth": { "Value": { "Fn::GetAtt": [ "SigningPreAuth", "Arn" ] } },
     "ExecutionRole": { "Value": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] } },
     "KeyPairBucket": { "Value": { "Ref": "CAKeyPairBucket" } },
+    "KeyPairName": { "Value": { "Ref": "CAKeyPairKeyname" } },
     "IdpMetadataEndpoint": { "Value": { "Ref": "IdpMetadataEndpoint" } }
   }
 }

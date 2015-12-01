@@ -45,7 +45,7 @@ exports.handler = function(event, context) {
 
 
     var bucketName = event.KeypairBucket;
-    var keyName = 'sshephalopod-ca';
+    var keyName = event.KeypairName;
     var realName = 'REAL-NAME-HERE';
     var tempdir;
     var db_params = {

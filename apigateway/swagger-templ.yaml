@@ -69,7 +69,7 @@ paths:
         uri: "%%REQUEST_NAME%%/invocations"
         credentials: "%%EXECUTION_ROLE%%"
         requestTemplates:
-          "application/x-www-form-urlencoded": "{\"IdpMetadataEndpoint\":\"%%IDP_ENDPOINT%%\",\"KeypairBucket\":\"%%KEYPAIR_BUCKET%%\",\"body\":$input.json('$')}"
+          "application/x-www-form-urlencoded": "{\"IdpMetadataEndpoint\":\"%%IDP_ENDPOINT%%\",\"KeypairBucket\":\"%%KEYPAIR_BUCKET%%\",\"KeypairName\":\"%%KEYPAIR_NAME%%\",\"body\":$input.json('$')}"
         httpMethod: POST
         responses:
           default:

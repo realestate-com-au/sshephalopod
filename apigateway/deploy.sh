@@ -31,6 +31,7 @@ Request_ARN=$( echo "$OUTPUTS" | awk '/SigningRequest/ { print $2 }' )
 PreAuth_ARN=$( echo "$OUTPUTS" | awk '/SigningPreAuth/ { print $2 }' )
 ExecRole_ARN=$( echo "$OUTPUTS" | awk '/ExecutionRole/ { print $2 }' )
 KeyPair_Bucket=$( echo "$OUTPUTS" | awk '/KeyPairBucket/ { print $2 }' )
+KeyPair_Name=$( echo "$OUTPUTS" | awk '/KeyPairName/ { print $2 }' )
 IDP_Endpoint=$( echo "$OUTPUTS" | awk '/IdpMetadataEndpoint/ { print $2 }' )
 
 Metadata_name="arn:aws:apigateway:$REGION:lambda:path/2015-03-31/functions/$Metadata_ARN"
@@ -42,6 +43,7 @@ sed -e "s|%%METADATA_NAME%%|$Metadata_name|" \
     -e "s|%%PREAUTH_NAME%%|$PreAuth_name|" \
     -e "s|%%EXECUTION_ROLE%%|$ExecRole_ARN|" \
     -e "s|%%KEYPAIR_BUCKET%%|$KeyPair_Bucket|" \
+    -e "s|%%KEYPAIR_NAME%%|$KeyPair_Name|" \
     -e "s|%%IDP_ENDPOINT%%|$IDP_Endpoint|" \
     < swagger-templ.yaml > swagger.yaml
 
