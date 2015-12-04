@@ -1,13 +1,15 @@
-# retrieve-ca-pub-key.py
+# Automated key rotation
 
-A script to update sshd trusted certs file with cert from DNS.
+## retrieve-ca-pub-key.py
 
-This script is designed to be run in cron on servers you wish to access via sshephalopod.
-The script retrieves the public certificate from a DNS end point provided and updated the
-trusted certs file as required. The following rules apply to handling older certs found on
+A script to update the `trusted_certs` file from DNS on a regular basis.
+
+This script is designed to be run in cron on servers you wish to access via `sshephalopod`.
+The script retrieves the public certificate from a DNS end point provided and updates the
+`trusted_certs` file. The following rules apply to handling older certs found on
 the host:
 
-|Number of old Certs found| Current cert found?|Action|
+|Number of old Certs found| Cert from DNS found?|Action|
 |-------------------------|--------------------|------|
 |0|No|Add cert from DNS to file|
 |0|Yes|No action|
@@ -20,14 +22,14 @@ This will allow for clients signed with an older key to continue working for a p
 
 ## How to run
 
-At minimum you need to provide a DNS end point from which to retrieve the key from:
+At minimum you need to provide a DNS end point from which to retrieve the key:
 
 ```
 /path/to/script/retrieve-ca-pub-key.py sshephalopod-ca-cert.example.com
 ```
 
 Optionally you can also provide the location of your trusted certs file
-(Default is: /etc/ssh/trusted_certs) and send the output to the local system syslod daemon:
+(Default is: `/etc/ssh/trusted_certs`) and send the output to the local system `syslog` daemon:
 
 ```
 /path/to/script/retrieve-ca-pub-key.py sshephalopod-ca-cert.example.com --filename /etc/MyTrustedCerts --syslog

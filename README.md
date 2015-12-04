@@ -140,6 +140,11 @@ For an EC2 instance, include the following code in your `UserData`:
   }
 ```
 
+### Automatic CA trusted key rotation
+
+Have a look at the [contributed key-rotation script](key-rotation/README.md)
+which replaces the one-time example above.
+
 ## Using it
 
 With a deployed sshephalopod and a configured Okta:
