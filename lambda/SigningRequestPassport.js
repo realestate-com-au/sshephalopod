@@ -1,7 +1,7 @@
 // Handle a signing requst
 // Expected inputs:
 // {
-//      "SAMLAssertion": "base64-encoded assertion",
+//      "SAMLResponse": "base64-encoded assertion",
 //      "SSHPublicKey": "ssh-rsa pubkey",
 //      "Username": "destination host username",
 //      "Hostname": "destination hostname"
