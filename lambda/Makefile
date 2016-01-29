@@ -17,6 +17,7 @@ API_ID?=something
 IDP_METADATA?=unknown
 API_ID=$(shell cat /tmp/api-gw.id )
 
+CONFIG=config.json
 KEYPAIR_NAME=$(DOMAIN)-sshephalopod-ca
 SP_HOST=$(API_ID).execute-api.us-west-2.amazonaws.com
 
@@ -30,6 +31,7 @@ zip: $(SOURCES) node_modules
 
 upload: zip
 	aws s3 cp $(ZIPFILE).zip s3://$(CONFIG_BUCKET)/$(ZIPFILE)-$(REV).zip
+	aws s3 cp $(CONFIG) s3://$(KEYPAIR_BUCKET)/$(CONFIG)
 
 deploy: upload
 	./deploy.sh $(CONFIG_BUCKET) $(ZIPFILE)-$(REV).zip \
