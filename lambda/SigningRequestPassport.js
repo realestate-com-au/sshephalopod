@@ -21,7 +21,17 @@ var temp = require('temp');
 var path = require('path');
 var AWS = require('aws-sdk');
 
-var DURATION_HOURS = 12;
+// DEFAULTS
+var DURATION = 12 * 3600;
+var SSH_OPTIONS = [];
+
+// if the duration is more than this, we assume that
+// someone passed in a config setting the duration as
+// seconds
+var MAX_HOURS = 24 * 7;
+
+var configName = "config.json";
+var config = {};
 
 exports.handler = function(event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
@@ -67,6 +77,23 @@ exports.handler = function(event, context) {
             console.log('Created dir ' + tempdir);
             next(null);
         },
+        function getConfig(next) {
+            retrieveObject(bucketName, configName, next);
+        },
+        function parseConfig(cfgJSON, next) {
+            config = JSON.parse(cfgJSON);
+
+            // check some basic things
+            if (parseInt(config.signatureDuration)) {
+                DURATION = parseInt(config.signatureDuration);
+            }
+
+            if (config.sshOptions) {
+                SSH_OPTIONS = [].concat.apply([], config.sshOptions.map(function(d){ return ['-O', d]; }));
+            }
+
+            next(null);
+        },
         function getIdpData(next) {
             console.log("Getting metadata from ", event.IdpMetadataEndpoint);
             retrieveMetadata(event.IdpMetadataEndpoint, next);
@@ -102,7 +129,7 @@ exports.handler = function(event, context) {
         function handlePostAssert(profile, loggedOut, next) {
             console.log("handPostAssert(%j, %j)", profile, loggedOut);
             now = new Date();
-            expiry = new Date(now.setHours(now.getHours() + DURATION_HOURS));
+            expiry = new Date(now.setSeconds(now.getSeconds() + DURATION));
             if (loggedOut) {
                 var err = new Error("User has been logged out")
                 next(err);
@@ -116,7 +143,7 @@ exports.handler = function(event, context) {
             }
         },
         function getKey(next) {
-            retrieveKey(bucketName, keyName, next);
+            retrieveObject(bucketName, keyName, next);
         },
         function saveKey(privKey, next) {
             console.log("Saving key to local filesystem");
@@ -149,10 +176,7 @@ exports.handler = function(event, context) {
                 '-z', now.getTime(),
                 '-I', realName,
                 '-n', event.body.Username,
-                '-O', 'no-agent-forwarding',
-                '-O', 'no-user-rc',
-                'pubkey'
-            ];
+            ].concat(SSH_OPTIONS).concat(['pubkey']);
 
             process.env.LD_LIBRARY_PATH = tempdir;
             process.env.HOME = tempdir;
@@ -187,33 +211,33 @@ exports.handler = function(event, context) {
 
 };
 
-function retrieveKey(bucketName, keyName, callback) {
+function retrieveObject(bucketName, keyName, callback) {
     var s3 = new AWS.S3();
-    var privKey = "";
+    var objectBody = "";
 
-    var privKeyParams = {
+    var objectParams = {
         Bucket: bucketName,
         Key: keyName
     };
 
     async.waterfall([
-        function loadPrivateKey(next) {
-            console.log("Checking for a private key in S3");
-            s3.getObject(privKeyParams, next);
-        }, function decidePrivateKey(data, next) {
-            console.log("Found private key, re-using");
-            privKey = data.Body.toString('utf8').trim();
+        function loadObject(next) {
+            console.log("Checking for object ", keyName, " in bucket ", bucketName);
+            s3.getObject(objectParams, next);
+        }, function handleObject(data, next) {
+            console.log("Got object");
+            objectBody = data.Body.toString('utf8').trim();
             next(null);
         }
     ], function (err, result) {
         if (err) {
-            console.log("Error checking existing keys");
+            console.log("Error looking for object");
             console.log(err, err.stack);
-            callback(new Error("cannot load keypair"), null);
+            callback(new Error("cannot load object"), null);
         } else if (privKey === '') {
-            callback(new Error("cannot load keypair"), null);
+            callback(new Error("cannot load object"), null);
         } else {
-            callback(null, privKey);
+            callback(null, objectBody);
         }
     });
 }
