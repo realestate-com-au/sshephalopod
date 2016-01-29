@@ -127,7 +127,7 @@ exports.handler = function(event, context) {
             saml.validatePostResponse(response, next);
         },
         function handlePostAssert(profile, loggedOut, next) {
-            console.log("handPostAssert(%j, %j)", profile, loggedOut);
+            console.log("handlePostAssert(%j, %j)", profile, loggedOut);
             now = new Date();
             expiry = new Date(now.setSeconds(now.getSeconds() + DURATION));
             if (loggedOut) {
