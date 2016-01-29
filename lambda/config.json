@@ -1,7 +1,8 @@
 {
   "sshOptions": [
     "no-agent-forwarding",
-    "no-user-rc"
+    "no-user-rc",
+    "no-x11-forwarding"
   ],
   "signatureDuration": 43200
 }
