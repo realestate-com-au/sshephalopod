@@ -172,7 +172,7 @@ exports.handler = function(event, context) {
             var args = [
                 './ssh-keygen',
                 '-s', keyName,
-                '-V', '+' + DURATION_HOURS + 'h',
+                '-V', '+' + DURATION + 's',
                 '-z', now.getTime(),
                 '-I', realName,
                 '-n', event.body.Username,
