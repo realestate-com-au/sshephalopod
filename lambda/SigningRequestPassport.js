@@ -234,7 +234,7 @@ function retrieveObject(bucketName, keyName, callback) {
             console.log("Error looking for object");
             console.log(err, err.stack);
             callback(new Error("cannot load object"), null);
-        } else if (privKey === '') {
+        } else if (objectBody === '') {
             callback(new Error("cannot load object"), null);
         } else {
             callback(null, objectBody);
