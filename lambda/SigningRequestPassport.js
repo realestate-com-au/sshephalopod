@@ -33,6 +33,11 @@ var MAX_HOURS = 24 * 7;
 var configName = "config.json";
 var config = {};
 
+var SAML2_RESPONSE_XPATH = ".//*[local-name()='Response' and " +
+           "namespace-uri() = 'urn:oasis:names:tc:SAML:2.0:protocol']";
+var REALNAME_XPATH = ".//*[local-name()='Attribute' and @Name='email']/*[local-name()='AttributeValue']/text()";
+var IDP_X509_CERT_XPATH = ".//*[local-name()='X509Certificate']/text()";
+
 exports.handler = function(event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
     console.log('Context is: %j', context);
@@ -67,6 +72,9 @@ exports.handler = function(event, context) {
     var cert = '';
     var returnData = {};
 
+    var xml = new Buffer(event.body.SAMLResponse, 'base64').toString('utf8');
+    var saml_doc = new dom().parseFromString(xml);
+
     async.waterfall([
         function createTempFile(next) {
             temp.mkdir('sshephalopod', next);
@@ -100,8 +108,7 @@ exports.handler = function(event, context) {
         },
         function assignCert(data, next) {
             var doc = new dom().parseFromString(data);
-            var path = ".//*[local-name()='X509Certificate']/text()";
-            saml_options.cert = xpath.select(path, doc)[0].toString('utf8');
+            saml_options.cert = xpath.select(IDP_X509_CERT_XPATH, doc)[0].toString('utf8');
             console.log('i has a cert: %j', saml_options.cert);
             next(null);
         }, function AssertResponse(next) {
@@ -109,16 +116,11 @@ exports.handler = function(event, context) {
 
             console.log("Going to try and assert a response: %j", saml_options);
 
-            var xml = new Buffer(event.body.SAMLResponse, 'base64').toString('utf8');
-            var doc = new dom().parseFromString(xml);
-            var path = ".//*[local-name()='Response' and " +
-                       "namespace-uri() = 'urn:oasis:names:tc:SAML:2.0:protocol']";
-            var saml2_response = xpath.select(path, doc).toString();
+            var saml2_response = xpath.select(SAML2_RESPONSE_XPATH, saml_doc).toString();
             console.log('using saml2_response: %j', saml2_response);
 
             console.log("Retrieving real name from XML");
-            path = ".//*[local-name()='Attribute' and @Name='email']/*[local-name()='AttributeValue']/text()";
-            realName = xpath.select(path, doc).toString();
+            realName = xpath.select(REALNAME_XPATH, saml_doc).toString();
             console.log("Got realName of " + realName);
             var encoded_response = new Buffer(saml2_response).toString('base64');
             var response = {
@@ -126,21 +128,24 @@ exports.handler = function(event, context) {
             };
             saml.validatePostResponse(response, next);
         },
-        function handlePostAssert(profile, loggedOut, next) {
-            console.log("handlePostAssert(%j, %j)", profile, loggedOut);
+        function checkLoggedOut(profile, loggedOut, next) {
+            console.log("checkLoggedOut(%j, %j)", profile, loggedOut);
             now = new Date();
             expiry = new Date(now.setSeconds(now.getSeconds() + DURATION));
             if (loggedOut) {
                 var err = new Error("User has been logged out")
                 next(err);
-            } else {
-                returnData = {
-                    Result: true,
-                    Message: "Authentication succeeded",
-                    Expiry: expiry.toISOString()
-                };
-                next(null)
-            }
+            } 
+
+            next(null);
+        },
+        function checkGroupMembership(next) {
+            returnData = {
+                Result: true,
+                Message: "Authentication succeeded",
+                Expiry: expiry.toISOString()
+            };
+            next(null)
         },
         function getKey(next) {
             retrieveObject(bucketName, keyName, next);
