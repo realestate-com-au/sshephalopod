@@ -158,7 +158,7 @@ exports.handler = function(event, context) {
             // by a group of which they are a member?
             if (!memberOf.some( function(d) {
                         return config.groups[d].some( function(x) {
-                            return (event.Username === x)
+                            return (event.body.Username === x)
                         })
                     }))
             {
@@ -166,7 +166,7 @@ exports.handler = function(event, context) {
                 next(err);
             }
 
-            console.log("Permitting access to ", realName, " as ", event.Username);
+            console.log("Permitting access to ", realName, " as ", event.body.Username);
             returnData = {
                 Result: true,
                 Message: "Authentication succeeded",
