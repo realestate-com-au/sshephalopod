@@ -143,7 +143,16 @@ exports.handler = function(event, context) {
         function checkGroupMembership(next) {
             var roles = xpath.select(ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
 
-            var memberOf = roles.filter(function(d){ if (config.groups[d]) { return d } });
+            console.log("roles is", roles);
+            console.log("config is", JSON.stringify(config));
+
+            var memberOf = roles.filter( function(d){ 
+                if (config.groups[d]) {
+                    return d
+                } else {
+                    console.log(d, "is not in config.groups");
+                }
+            });
 
             console.log("memberOf is", memberOf);
 
