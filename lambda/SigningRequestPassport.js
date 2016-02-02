@@ -37,6 +37,7 @@ var SAML2_RESPONSE_XPATH = ".//*[local-name()='Response' and " +
            "namespace-uri() = 'urn:oasis:names:tc:SAML:2.0:protocol']";
 var REALNAME_XPATH = ".//*[local-name()='Attribute' and @Name='email']/*[local-name()='AttributeValue']/text()";
 var IDP_X509_CERT_XPATH = ".//*[local-name()='X509Certificate']/text()";
+var ROLE_ATTRIBUTES_XPATH = ".//*[@FriendlyName='Role']/*[local-name()='AttributeValue']/text()";
 
 exports.handler = function(event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
@@ -140,6 +141,32 @@ exports.handler = function(event, context) {
             next(null);
         },
         function checkGroupMembership(next) {
+            var roles = xpath.select(ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
+
+            var memberOf = roles.filter(function(d){ if (config.groups[d]) { return d } });
+
+            // if there are no matching groups for this assertion, then
+            // the user can't be allowed to log in -- unless we're
+            // defaulting to "Allow", which is silly (but possible)
+            if (memberOf.length < 1) {
+                var err = new Error("You do not have permission to log in as that user");
+                next(err);
+            }
+
+            // so they are a member of a group that we know about;
+            // are they requesting access to a user that is permitted
+            // by a group of which they are a member?
+            if (!memberOf.some( function(d) {
+                        return config.groups[d].some( function(x) {
+                            return (event.Username === x)
+                        })
+                    }))
+            {
+                var err = new Error("You do not have permission to log in as that user");
+                next(err);
+            }
+
+            console.log("Permitting access to ", realName, " as ", event.Username);
             returnData = {
                 Result: true,
                 Message: "Authentication succeeded",
