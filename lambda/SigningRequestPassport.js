@@ -143,7 +143,14 @@ exports.handler = function(event, context) {
         function checkGroupMembership(next) {
             var roles = xpath.select(ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
 
+            var memberOf = [];
             var memberOf = roles.filter(function(d){ if (config.groups[d]) { return d } });
+
+            for (i=0; i<roles.length; i++) {
+                if (config.groups[i]) {
+                    memberOf.push(config.groups[i]);
+                }
+            }
 
             // if there are no matching groups for this assertion, then
             // the user can't be allowed to log in -- unless we're
@@ -156,12 +163,16 @@ exports.handler = function(event, context) {
             // so they are a member of a group that we know about;
             // are they requesting access to a user that is permitted
             // by a group of which they are a member?
-            if (!memberOf.some( function(d) {
-                        return config.groups[d].some( function(x) {
-                            return (event.body.Username === x)
-                        })
-                    }))
-            {
+            var isAllowed = false;
+            for (i=0; i<memberOf.length; i++) {
+                for (j=0; j<config.groups[ memberOf[i] ]; j++) {
+                    if (config.groups[ memberOf[i] ][j] === event.body.Username) {
+                        isAllowed = true;
+                    }
+                }
+            }
+
+            if (!isAllowed) {
                 var err = new Error("You do not have permission to log in as that user");
                 next(err);
             }
