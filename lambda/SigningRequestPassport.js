@@ -145,6 +145,8 @@ exports.handler = function(event, context) {
 
             var memberOf = roles.filter(function(d){ if (config.groups[d]) { return d } });
 
+            console.log("memberOf is", memberOf);
+
             // if there are no matching groups for this assertion, then
             // the user can't be allowed to log in -- unless we're
             // defaulting to "Allow", which is silly (but possible)
