@@ -143,38 +143,30 @@ exports.handler = function(event, context) {
         function checkGroupMembership(next) {
             var roles = xpath.select(ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
 
-            var memberOf = [];
             var memberOf = roles.filter(function(d){ if (config.groups[d]) { return d } });
-
-            for (i=0; i<roles.length; i++) {
-                if (config.groups[i]) {
-                    memberOf.push(config.groups[i]);
-                }
-            }
 
             // if there are no matching groups for this assertion, then
             // the user can't be allowed to log in -- unless we're
             // defaulting to "Allow", which is silly (but possible)
             if (memberOf.length < 1) {
-                var err = new Error("You do not have permission to log in as that user");
-                next(err);
+                var err = new Error("You do not have permission to log in as any user");
+                return next(err);
             }
 
             // so they are a member of a group that we know about;
             // are they requesting access to a user that is permitted
             // by a group of which they are a member?
-            var isAllowed = false;
-            for (i=0; i<memberOf.length; i++) {
-                for (j=0; j<config.groups[ memberOf[i] ]; j++) {
-                    if (config.groups[ memberOf[i] ][j] === event.body.Username) {
-                        isAllowed = true;
-                    }
-                }
-            }
-
-            if (!isAllowed) {
+            if (!memberOf.some( function(d) {
+                        return config.groups[d].some( function(x) {
+                            if (event.body.Username === x) {
+                                console.log(x, "is allowed by inclusion in ", d);
+                                return (event.body.Username === x);
+                            }
+                        })
+                    }))
+            {
                 var err = new Error("You do not have permission to log in as that user");
-                next(err);
+                return next(err);
             }
 
             console.log("Permitting access to ", realName, " as ", event.body.Username);
@@ -183,7 +175,7 @@ exports.handler = function(event, context) {
                 Message: "Authentication succeeded",
                 Expiry: expiry.toISOString()
             };
-            next(null)
+            next(null);
         },
         function getKey(next) {
             retrieveObject(bucketName, keyName, next);
