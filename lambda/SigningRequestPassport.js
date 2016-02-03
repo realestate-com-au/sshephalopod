@@ -142,7 +142,7 @@ exports.handler = function(event, context) {
             next(null);
         },
         function checkGroupMembership(next) {
-            var roles = xpath.select(OKTA_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
+            var roles = xpath.select(OKTA_ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
 
             if (roles.length < 1) {
                 // try the "other" XPath selector
