@@ -37,7 +37,8 @@ var SAML2_RESPONSE_XPATH = ".//*[local-name()='Response' and " +
            "namespace-uri() = 'urn:oasis:names:tc:SAML:2.0:protocol']";
 var REALNAME_XPATH = ".//*[local-name()='Attribute' and @Name='email']/*[local-name()='AttributeValue']/text()";
 var IDP_X509_CERT_XPATH = ".//*[local-name()='X509Certificate']/text()";
-var ROLE_ATTRIBUTES_XPATH = ".//*[@FriendlyName='Role']/*[local-name()='AttributeValue']/text()";
+var SHIBBOLETH_ROLE_ATTRIBUTES_XPATH = ".//*[@FriendlyName='Role']/*[local-name()='AttributeValue']/text()";
+var OKTA_ROLE_ATTRIBUTES_XPATH = ".//*[@Name='role']/*[local-name()='AttributeValue']/text()";
 
 exports.handler = function(event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
@@ -141,7 +142,17 @@ exports.handler = function(event, context) {
             next(null);
         },
         function checkGroupMembership(next) {
-            var roles = xpath.select(ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
+            var roles = xpath.select(OKTA_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
+
+            if (roles.length < 1) {
+                // try the "other" XPath selector
+                roles = xpath.select(SHIBBOLETH_ROLE_ATTRIBUTES_XPATH, saml_doc).map(function(d){return d.toString()});
+            }
+
+            if (roles.length < 1) {
+                var err = new Error("No role memberships found");
+                return next(err);
+            }
 
             console.log("roles is", roles);
             console.log("config is", JSON.stringify(config));
