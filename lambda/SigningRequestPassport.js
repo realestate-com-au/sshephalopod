@@ -150,7 +150,9 @@ exports.handler = function(event, context) {
             }
 
             if (roles.length < 1) {
-                var err = new Error("No role memberships found");
+                // Couldn't find any role memberships at all ... perhaps this IdP uses
+                // different names?
+                var err = new Error("No role memberships found -- check your Identity Provider configuration");
                 return next(err);
             }
 
@@ -171,7 +173,7 @@ exports.handler = function(event, context) {
             // the user can't be allowed to log in -- unless we're
             // defaulting to "Allow", which is silly (but possible)
             if (memberOf.length < 1) {
-                var err = new Error("You do not have permission to log in as any user");
+                var err = new Error("You do not have permission to log in as that user");
                 return next(err);
             }
 
