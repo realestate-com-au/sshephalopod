@@ -1,8 +1,6 @@
 // handle the initial SAML pre-auth GET request
 //
 
-console.log('Starting function');
-
 var fs = require('fs');
 var xpath = require('xpath'),
     dom = require('xmldom').DOMParser;
