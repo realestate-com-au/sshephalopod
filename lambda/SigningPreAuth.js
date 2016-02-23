@@ -8,8 +8,6 @@ var xpath = require('xpath'),
     dom = require('xmldom').DOMParser;
 var async = require('async');
 var SAML = require('passport-saml').SAML;
-var dbdoc = require('dynamodb-doc');
-var dynamodb = new dbdoc.DynamoDB();
 
 exports.handler = function(event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
