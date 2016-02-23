@@ -1,0 +1,39 @@
+{
+  "name": "sshephalopod-lambda",
+  "version": "0.0.1",
+  "description": "Lambda functions for sshephalopod",
+  "main": "APIGateway",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "async": "^1.4.2",
+    "passport-saml": "^0.12.0",
+    "xml2js": "^0.4.12",
+    "xmldom": "^0.1.19",
+    "xpath": "^0.0.9",
+    "temp": "^0.8.3",
+    "saml2-js": "^1.0.2"
+  },
+  "devDependencies": {
+    "mocha": "2"
+  },
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/realestate-com-au/sshephalopod.git"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "ssh"
+  ],
+  "author": "Colin Panisset",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/realestate-com-au/sshephalopod/issues"
+  },
+  "homepage": "https://github.com/realestate-com-au/sshephalopod#readme"
+}
