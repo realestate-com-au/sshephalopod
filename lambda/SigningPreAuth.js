@@ -7,7 +7,7 @@ var xpath = require('xpath'),
 var async = require('async');
 var SAML = require('passport-saml').SAML;
 
-exports.handler = function(event, context) {
+var handler = function (event, context) {
     console.log('Received event:', JSON.stringify(event, null, 2));
     console.log("Context: %j", context);
 
@@ -67,7 +67,7 @@ exports.handler = function(event, context) {
     });
 };
 
-function retrieveMetadata(IdpURL, callback) {
+var retrieveMetadata = function(IdpURL, callback) {
     console.log('Retrieving metadata from ' + IdpURL);
 
     var responseData = {};
@@ -79,7 +79,7 @@ function retrieveMetadata(IdpURL, callback) {
           var parsedUrl = url.parse(IdpURL);
           var options = {
               hostname: parsedUrl.hostname,
-              port: 443,
+              port: parsedUrl.port || 443,
               path: parsedUrl.path,
               method: 'GET'
           };
@@ -96,13 +96,18 @@ function retrieveMetadata(IdpURL, callback) {
             });
           });
           request.on('error', function(err) {
-            callback({Error: err, Opts: options}, null);
+            callback(err, null);
           });
           request.end();
         } else {
-          callback({Error: 'IdP URL not supported'}, null);
+          callback(new Error('IdP URL not supported'), null);
         }
     } else {
-        callback({Error: 'IdP URL not supported'}, null);
+        callback(new Error('IdP URL not supported'), null);
     }
+};
+
+module.exports = {
+    handler: handler,
+    retrieveMetadata: retrieveMetadata
 };
