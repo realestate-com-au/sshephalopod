@@ -26,11 +26,6 @@ var handler = function (event, context) {
         callbackUrl: callback
     };
 
-    var dbParams = {
-        Key: { IdpName: 'default' },
-        TableName: 'IdpMetadataTable'
-    };
-
     var is_passive = false;
     var loginRequest = {};
 
