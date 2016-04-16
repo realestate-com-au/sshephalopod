@@ -19,3 +19,9 @@ deploy:
 	@echo "Deployed API"
 	IDP_METADATA=$(IDP_METADATA) CONFIG_BUCKET=$(CONFIG_BUCKET) KEYPAIR_BUCKET=$(KEYPAIR_BUCKET) DOMAIN=$(DOMAIN) make -C lambda deploy
 	rm /tmp/api-gw.id
+
+build-docker:
+	docker build -t sshephalopod-deploy --force-rm=true .
+
+deploy-docker:
+	docker run -it $(shell echo "$${!AWS_*}" | sed -e 's/AWS/-e AWS/g') sshephalopod-deploy
