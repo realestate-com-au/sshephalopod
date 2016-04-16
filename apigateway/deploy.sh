@@ -45,7 +45,7 @@ sed -e "s|%%METADATA_NAME%%|$Metadata_name|" \
     -e "s|%%KEYPAIR_BUCKET%%|$KeyPair_Bucket|" \
     -e "s|%%KEYPAIR_NAME%%|$KeyPair_Name|" \
     -e "s|%%IDP_ENDPOINT%%|$IDP_Endpoint|" \
-    < swagger-templ.yaml > swagger.yaml
+    < swagger-templ.json > swagger.json
 
 OUT=$( cd aws-apigateway-importer && \
     ./aws-api-import.sh -r $REGION -c -d prod ../swagger.yaml 2>&1 )
