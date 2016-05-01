@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Lambda functions for sshephalopod",
+  "Description": "SSHephalopod is an SSH Certificate Authority",
 
   "Parameters": {
     "Bucket": {
@@ -252,10 +252,10 @@
           { "Fn::Join": [
             "", [
               "0 0 443 ",
-              { "Ref": "SSHephalopodAPIDeployment" },
+              { "Ref": "SSHephalopodAPI" },
               ".execute-api.",
               { "Ref": "AWS::Region" },
-              ".amazonaws.com"
+              ".amazonaws.com/prod"
             ]
           ]}
         ]
@@ -278,22 +278,13 @@
       }
     },
 
-    "SSHephalopodAPIProd": {
-      "Type": "AWS::ApiGateway::Stage",
-      "Properties": {
-        "DeploymentId": { "Ref": "SSHephalopodAPIDeployment" },
-        "RestApiId": { "Ref": "SSHephalopodAPI" },
-        "StageName": "prod"
-      }
-    },
-
     "SSHephalopodAPIMethodMetadata": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "HttpMethod": "GET",
         "AuthorizationType": "NONE",
         "Integration": {
-          "Credentials": { "Ref": "APIGatewayExecRole" },
+          "Credentials": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] },
           "IntegrationHttpMethod": "POST",
           "IntegrationResponses": [
             { "StatusCode": "200" }
@@ -317,7 +308,6 @@
       }
     }
 
-
   },
 
   "Outputs": {
@@ -328,19 +318,6 @@
     "ExecutionRole": { "Value": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] } },
     "KeyPairBucket": { "Value": { "Ref": "CAKeyPairBucket" } },
     "KeyPairName": { "Value": { "Ref": "CAKeyPairKeyname" } },
-    "IdpMetadataEndpoint": { "Value": { "Ref": "IdpMetadataEndpoint" } },
-    "TestUri": { "Value": {
-            "Fn::Join": [
-              "",
-              [
-                "arn:aws:apigateway:",
-                { "Ref": "AWS::Region" },
-                ":lambda:path/2015-03-31/functions/",
-                { "Fn::GetAtt": [ "GenerateMetadata", "Arn" ] },
-                "/invocations"
-              ]
-            ]
-        }}
-
+    "IdpMetadataEndpoint": { "Value": { "Ref": "IdpMetadataEndpoint" } }
   }
 }
