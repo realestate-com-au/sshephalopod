@@ -19,7 +19,6 @@ API_ID=$(shell cat /tmp/api-gw.id )
 
 CONFIG=config.json
 KEYPAIR_NAME=$(DOMAIN)-sshephalopod-ca
-SP_HOST=$(API_ID).execute-api.us-west-2.amazonaws.com
 
 all:
 	@echo "make upload: publish zipfile to S3 in DEV"
@@ -33,8 +32,9 @@ upload: zip
 	aws s3 cp $(ZIPFILE).zip s3://$(CONFIG_BUCKET)/$(ZIPFILE)-$(REV).zip
 	aws s3 cp $(CONFIG) s3://$(KEYPAIR_BUCKET)/$(CONFIG)
 
-deploy: upload
+deploy: upload onlydeploy
+
+onlydeploy:
 	./deploy.sh $(CONFIG_BUCKET) $(ZIPFILE)-$(REV).zip \
-		$(IDP_METADATA) $(DOMAIN) $(KEYPAIR_BUCKET) $(KEYPAIR_NAME) \
-		$(SP_HOST)
+		$(IDP_METADATA) $(DOMAIN) $(KEYPAIR_BUCKET) $(KEYPAIR_NAME)
 
