@@ -282,7 +282,7 @@
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": { "Fn::GetAtt": [ "SSHephalopodAPI", "RootResourceId" ] },
-        "PathPart": "/metadata",
+        "PathPart": "metadata",
         "RestApiId": { "Ref": "SSHephalopodAPI" }
       }
     },
