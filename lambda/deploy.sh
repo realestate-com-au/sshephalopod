@@ -1,12 +1,13 @@
 #!/bin/bash
 
-if [ $# -ne 7 ]; then
-    echo "usage: $0 <config-bucket> <zipfile> <idp-metadata-url> <dns-domain> <keypair-bucket> <keypair-name> <sp-host>"
+if [ $# -ne 6 ]; then
+    echo $#
+    echo "usage: $0 <config-bucket> <zipfile> <idp-metadata-url> <dns-domain> <keypair-bucket> <keypair-name>"
     exit 1
 fi
 
-LAMBDA_STACK="sshephalopod-lambda"
-LAMBDA_REGION=us-west-2
+LAMBDA_STACK="sshephalopod"
+LAMBDA_REGION=${AWS_LAMBDA_DEFAULT_REGION:-us-west-2}
 
 BUCKET=$1
 ZIPFILE=$2
@@ -14,7 +15,6 @@ IDP_METADATA=$3
 DNSDOMAIN=$4
 KP_BUCKET=$5
 KP_NAME=$6
-SP_HOST=$7
 
 log () {
     date "+%Y-%m-%d %H:%M:%S $1"
@@ -75,8 +75,7 @@ create_lambda_stack () {
             "ParameterKey=IdpMetadataEndpoint,ParameterValue=$IDP_METADATA" \
             "ParameterKey=DNSDomain,ParameterValue=$DNSDOMAIN" \
             "ParameterKey=CAKeyPairBucket,ParameterValue=$KP_BUCKET" \
-            "ParameterKey=CAKeyPairKeyname,ParameterValue=$KP_NAME" \
-            "ParameterKey=SPHostName,ParameterValue=$SP_HOST"
+            "ParameterKey=CAKeyPairKeyname,ParameterValue=$KP_NAME"
 
     )
     wait_completion $STACK $LAMBDA_REGION || return 1
@@ -96,8 +95,7 @@ update_lambda_stack () {
             "ParameterKey=IdpMetadataEndpoint,ParameterValue=$IDP_METADATA" \
             "ParameterKey=DNSDomain,ParameterValue=$DNSDOMAIN" \
             "ParameterKey=CAKeyPairBucket,ParameterValue=$KP_BUCKET" \
-            "ParameterKey=CAKeyPairKeyname,ParameterValue=$KP_NAME" \
-            "ParameterKey=SPHostName,ParameterValue=$SP_HOST"
+            "ParameterKey=CAKeyPairKeyname,ParameterValue=$KP_NAME"
     )
     wait_completion $STACK $LAMBDA_REGION || return 1
 }
