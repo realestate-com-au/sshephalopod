@@ -278,6 +278,45 @@
       }
     },
 
+    "SSHephalopodAPIResourceMetadata": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": { "Fn::GetAtt": [ "SSHephalopodAPI", "RootResourceId" ] },
+        "PathPart": "/metadata",
+        "RestApiId": { "Ref": "SSHephalopodAPI" }
+      }
+    },
+
+    "SSHephalopodAPIMethodMetadata": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Credentials": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            { "StatusCode": "200" }
+          ],
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                { "Ref": "AWS::Region" },
+                ":lambda:path/2015-03-31/functions/",
+                { "Fn::GetAtt": [ "GenerateMetadata", "Arn" ] },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": { "Ref": "SSHephalopodAPIResourceMetadata" },
+        "RestApiId": { "Ref": "SSHephalopodAPI" }
+      }
+    },
+
     "SSHephalopodAPIMethodMetadata": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
