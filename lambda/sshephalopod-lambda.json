@@ -28,10 +28,6 @@
     "CAKeyPairKeyname": {
       "Description": "The name of the keypair in the S3 bucket",
       "Type": "String"
-    },
-    "SPHostName": {
-      "Description": "The name of the SP (from API gateway)",
-      "Type": "String"
     }
   },
 
@@ -63,15 +59,6 @@
                     "logs:*"
                   ],
                   "Resource": "arn:aws:logs:*:*:*"
-                },
-                {
-                  "Sid": "PermitUpdateDynamo",
-                  "Effect": "Allow",
-                  "Action": [
-                    "dynamodb:UpdateItem",
-                    "dynamodb:GetItem"
-                  ],
-                  "Resource": "*"
                 },
                 {
                   "Sid": "PermitUseKeypairBucket",
@@ -265,12 +252,71 @@
           { "Fn::Join": [
             "", [
               "0 0 443 ",
-              { "Ref": "SPHostName" }
+              { "Ref": "SSHephalopodAPIDeployment" },
+              ".execute-api.",
+              { "Ref": "AWS::Region" },
+              ".amazonaws.com"
             ]
           ]}
         ]
       }
+    },
+
+    "SSHephalopodAPI": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "SSHephalopod"
+      }
+    },
+
+    "SSHephalopodAPIDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": "SSHephalopodAPIMethodMetadata",
+      "Properties": {
+        "RestApiId": { "Ref": "SSHephalopodAPI" },
+        "StageName": "prod"
+      }
+    },
+
+    "SSHephalopodAPIProd": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "DeploymentId": { "Ref": "SSHephalopodAPIDeployment" },
+        "RestApiId": { "Ref": "SSHephalopodAPI" },
+        "StageName": "prod"
+      }
+    },
+
+    "SSHephalopodAPIMethodMetadata": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Credentials": { "Ref": "APIGatewayExecRole" },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            { "StatusCode": "200" }
+          ],
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                { "Ref": "AWS::Region" },
+                ":lambda:path/2015-03-31/functions/",
+                { "Fn::GetAtt": [ "GenerateMetadata", "Arn" ] },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": { "Fn::GetAtt": [ "SSHephalopodAPI", "RootResourceId" ] },
+        "RestApiId": { "Ref": "SSHephalopodAPI" }
+      }
     }
+
 
   },
 
@@ -282,6 +328,19 @@
     "ExecutionRole": { "Value": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] } },
     "KeyPairBucket": { "Value": { "Ref": "CAKeyPairBucket" } },
     "KeyPairName": { "Value": { "Ref": "CAKeyPairKeyname" } },
-    "IdpMetadataEndpoint": { "Value": { "Ref": "IdpMetadataEndpoint" } }
+    "IdpMetadataEndpoint": { "Value": { "Ref": "IdpMetadataEndpoint" } },
+    "TestUri": { "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                { "Ref": "AWS::Region" },
+                ":lambda:path/2015-03-31/functions/",
+                { "Fn::GetAtt": [ "GenerateMetadata", "Arn" ] },
+                "/invocations"
+              ]
+            ]
+        }}
+
   }
 }
