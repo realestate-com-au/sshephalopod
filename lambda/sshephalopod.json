@@ -288,12 +288,40 @@
       }
     },
 
+    "SSHephalopodAPIResourceSigning": {
+      "Type": "AWS::ApiGateway::Resource",
+      "DependsOn": "SSHephalopodAPI",
+      "Properties": {
+        "ParentId": { "Fn::GetAtt": [ "SSHephalopodAPI", "RootResourceId" ] },
+        "PathPart": "signing",
+        "RestApiId": { "Ref": "SSHephalopodAPI" }
+      }
+    },
+
     "SuccessfulResponseModel": {
       "Type": "AWS::ApiGateway::Model",
       "Properties": {
         "ContentType": "application/xml",
         "RestApiId": { "Ref": "SSHephalopodAPI" },
         "Schema": "{\"type\":\"string\",\"title\":\"MetadataResponse\",\"definitions\":{}}"
+      }
+    },
+
+    "SigningRequestModel": {
+      "Type": "AWS::ApiGateway::Model",
+      "Properties": {
+        "ContentType": "application/json",
+        "RestApiId": { "Ref": "SSHephalopodAPI" },
+        "Schema": "{\"properties\":{\"SAMLResponse\":{\"type\":\"string\",\"description\":\"The SAML Assertion from the IdP, base64-encoded\"},\"SSHPublicKey\":{\"type\":\"string\",\"description\":\"The requesting user's SSH pubkey\"},\"Username\":{\"type\":\"string\",\"description\":\"The username that the signature will permit logins to on the destination (trusting) host\"},\"Hostname\":{\"type\":\"string\",\"description\":\"The destination hostname that the signature will be valid for (optional)\"}},\"definitions\":{}}"
+      }
+    },
+
+    "SignedResponseModel": {
+      "Type": "AWS::ApiGateway::Model",
+      "Properties": {
+        "ContentType": "application/json",
+        "RestApiId": { "Ref": "SSHephalopodAPI" },
+        "Schema": "{\"properties\":{\"Result\":{\"type\":\"boolean\",\"description\":\"Whether or not the signing request was successful.\",\"default\":false},\"Message\":{\"type\":\"string\",\"description\":\"Additional information about the signing request.\"},\"Expiry\":{\"type\":\"string\",\"description\":\"The ISO8601-formatted timestamp when the signature will expire\"},\"SignedKey\":{\"type\":\"string\",\"description\":\"An SSH public key signed by the private key of the sshephalopod CA\"}},\"definitions\":{}}"
       }
     },
 
@@ -315,12 +343,10 @@
               "Fn::Join": [
                 "",
                 [
-                  "{",
-                    "\"api-id\":\"", { "Ref": "SSHephalopodAPI" }, "\",",
+                  "{", "\"api-id\":\"", { "Ref": "SSHephalopodAPI" }, "\",",
                     "\"stage\":\"", "prod", "\",",
                     "\"region\":\"", { "Ref": "AWS::Region" }, "\",",
-                    "\"resource-path\":\"", "/metadata", "\"",
-                  "}"
+                    "\"resource-path\":\"", "/metadata", "\"", "}"
                 ]
               ]
             }
@@ -345,6 +371,57 @@
           }
         ],
         "ResourceId": { "Ref": "SSHephalopodAPIResourceMetadata" },
+        "RestApiId": { "Ref": "SSHephalopodAPI" }
+      }
+    },
+
+    "SSHephalopodAPIMethodSigningRequest": {
+      "Type": "AWS::ApiGateway::Method",
+      "DependsOn": "SSHephalopodAPIResourceSigning",
+      "Properties": {
+        "HttpMethod": "GET",
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Credentials": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            { "StatusCode": "200" }
+          ],
+          "Type": "AWS",
+          "RequestTemplates": {
+            "application/json": {
+              "Fn::Join": [
+                "",
+                [
+                  "{", "\"api-id\":\"", { "Ref": "SSHephalopodAPI" }, "\",",
+                    "\"stage\":\"", "prod", "\",",
+                    "\"IdpMetadataEndpoint\":\"", { "Ref": "IdpMetadataEndpoint" }, "\",",
+                    "\"region\":\"", { "Ref": "AWS::Region" }, "\",",
+                    "\"resource-path\":\"", "/signing", "\"", "}"
+                ]
+              ]
+            }
+          },
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                { "Ref": "AWS::Region" },
+                ":lambda:path/2015-03-31/functions/",
+                { "Fn::GetAtt": [ "SigningPreAuth", "Arn" ] },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseModels": { "application/xml": { "Ref": "SigningRequestModel" } }
+          }
+        ],
+        "ResourceId": { "Ref": "SSHephalopodAPIResourceSigning" },
         "RestApiId": { "Ref": "SSHephalopodAPI" }
       }
     }
