@@ -21,7 +21,7 @@ exports.handler = function(event, context) {
     };
 
     saml_options.callbackUrl =
-        'https://' + event['api-id'] + '.execute-api.' + 'us-west-2' + '.amazonaws.com/' +
+        'https://' + event['api-id'] + '.execute-api.' + event.region + '.amazonaws.com/' +
         event.stage + event['resource-path'];
 
     console.log('callbackURL is ' + saml_options.callbackUrl);
