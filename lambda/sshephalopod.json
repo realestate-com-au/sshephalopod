@@ -307,7 +307,7 @@
       }
     },
 
-    "SigningRequestModel": {
+    "SigningPreAuthModel": {
       "Type": "AWS::ApiGateway::Model",
       "Properties": {
         "ContentType": "application/json",
@@ -375,7 +375,7 @@
       }
     },
 
-    "SSHephalopodAPIMethodSigningRequest": {
+    "SSHephalopodAPIMethodSigningPreAuth": {
       "Type": "AWS::ApiGateway::Method",
       "DependsOn": "SSHephalopodAPIResourceSigning",
       "Properties": {
@@ -418,7 +418,63 @@
         "MethodResponses": [
           {
             "StatusCode": "200",
-            "ResponseModels": { "application/xml": { "Ref": "SigningRequestModel" } }
+            "ResponseModels": { "application/xml": { "Ref": "SigningPreAuthModel" } }
+          }
+        ],
+        "ResourceId": { "Ref": "SSHephalopodAPIResourceSigning" },
+        "RestApiId": { "Ref": "SSHephalopodAPI" }
+      }
+    },
+
+    "SSHephalopodAPIMethodSigningRequest": {
+      "Type": "AWS::ApiGateway::Method",
+      "DependsOn": "SSHephalopodAPIResourceSigning",
+      "Properties": {
+        "HttpMethod": "POST",
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Credentials": { "Fn::GetAtt": [ "APIGatewayExecRole", "Arn" ] },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            { "StatusCode": "200" }
+          ],
+          "Type": "AWS",
+          "RequestTemplates": {
+            "application/x-www-form-encoded": {
+              "Fn::Join": [
+                "",
+                [
+                  "{", 
+                  "\"api-id\":\"", { "Ref": "SSHephalopodAPI" }, "\",",
+                  "\"stage\":\"", "prod", "\",",
+                  "\"IdpMetadataEndpoint\":\"", { "Ref": "IdpMetadataEndpoint" }, "\",",
+                  "\"region\":\"", { "Ref": "AWS::Region" }, "\",",
+                  "\"resource-path\":\"", "/signing", "\"", 
+                  "\"KeypairBucket\":\"", { "Ref": "CAKeyPairBucket" }, "\"", 
+                  "\"KeypairName\":\"", { "Ref": "CAKeyPairKeyname" }, "\"", 
+                  "\"body\":\"", "$input.json('$')", "\"", 
+                  "}"
+                ]
+              ]
+            }
+          },
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:",
+                { "Ref": "AWS::Region" },
+                ":lambda:path/2015-03-31/functions/",
+                { "Fn::GetAtt": [ "SigningRequestPassport", "Arn" ] },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseModels": { "application/json": { "Ref": "SignedResponseModel" } }
           }
         ],
         "ResourceId": { "Ref": "SSHephalopodAPIResourceSigning" },
