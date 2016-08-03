@@ -48,7 +48,7 @@ sed -e "s|%%METADATA_NAME%%|$Metadata_name|" \
     < swagger-templ.json > swagger.json
 
 OUT=$( cd aws-apigateway-importer && \
-    ./aws-api-import.sh -r $REGION -c -d prod ../swagger.yaml 2>&1 )
+    ./aws-api-import.sh -r $REGION -c -d prod ../swagger.json 2>&1 )
 
 # we're looking for a line like:
 # 2015-10-19 18:30:32,282 INFO - Creating deployment for API kn0pcmhkja and stage prod
