@@ -68,7 +68,7 @@ create_lambda_stack () {
     local OUT=$( aws --region $LAMBDA_REGION cloudformation create-stack \
         --stack-name $LAMBDA_STACK \
         --capabilities CAPABILITY_IAM \
-        --template-body file://$STACK.json \
+        --template-body file://sshephalopod.json \
         --parameters \
             "ParameterKey=Bucket,ParameterValue=$BUCKET" \
             "ParameterKey=CodeFile,ParameterValue=$ZIPFILE" \
@@ -88,7 +88,7 @@ update_lambda_stack () {
     local OUT=$( aws --region $LAMBDA_REGION cloudformation update-stack \
         --stack-name $LAMBDA_STACK \
         --capabilities CAPABILITY_IAM \
-        --template-body file://$STACK.json \
+        --template-body file://sshephalopod.json \
         --parameters \
             "ParameterKey=Bucket,ParameterValue=$BUCKET" \
             "ParameterKey=CodeFile,ParameterValue=$ZIPFILE" \
