@@ -6,7 +6,7 @@ if [ $# -ne 6 ]; then
     exit 1
 fi
 
-LAMBDA_STACK="sshephalopod"
+LAMBDA_STACK="${LAMBDA_STACK:-sshephalopod}"
 LAMBDA_REGION=${AWS_LAMBDA_DEFAULT_REGION:-us-west-2}
 
 BUCKET=$1
