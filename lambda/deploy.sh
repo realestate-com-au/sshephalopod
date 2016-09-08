@@ -6,7 +6,7 @@ if [ $# -ne 6 ]; then
     exit 1
 fi
 
-LAMBDA_STACK="sshephalopod"
+LAMBDA_STACK="${LAMBDA_STACK:-sshephalopod}"
 LAMBDA_REGION=${AWS_LAMBDA_DEFAULT_REGION:-us-west-2}
 
 BUCKET=$1
@@ -68,7 +68,7 @@ create_lambda_stack () {
     local OUT=$( aws --region $LAMBDA_REGION cloudformation create-stack \
         --stack-name $LAMBDA_STACK \
         --capabilities CAPABILITY_IAM \
-        --template-body file://$STACK.json \
+        --template-body file://sshephalopod.json \
         --parameters \
             "ParameterKey=Bucket,ParameterValue=$BUCKET" \
             "ParameterKey=CodeFile,ParameterValue=$ZIPFILE" \
@@ -88,7 +88,7 @@ update_lambda_stack () {
     local OUT=$( aws --region $LAMBDA_REGION cloudformation update-stack \
         --stack-name $LAMBDA_STACK \
         --capabilities CAPABILITY_IAM \
-        --template-body file://$STACK.json \
+        --template-body file://sshephalopod.json \
         --parameters \
             "ParameterKey=Bucket,ParameterValue=$BUCKET" \
             "ParameterKey=CodeFile,ParameterValue=$ZIPFILE" \
