@@ -7,7 +7,6 @@ if [ $# -ne 6 ]; then
 fi
 
 LAMBDA_STACK="${LAMBDA_STACK:-sshephalopod}"
-LAMBDA_REGION=${AWS_LAMBDA_DEFAULT_REGION:-us-west-2}
 
 BUCKET=$1
 ZIPFILE=$2
@@ -27,14 +26,9 @@ die () {
 
 wait_completion () {
     local STACK=$1
-    local REGION=$2
-    local REGION_ARG=""
-    if [ -n "$REGION" ]; then
-        REGION_ARG="--region $REGION"
-    fi
     echo -n "Waiting for stack $STACK to complete:"
     while true; do
-        local STATUS=$( aws $REGION_ARG cloudformation describe-stack-events \
+        local STATUS=$( aws cloudformation describe-stack-events \
             --stack-name $STACK \
             --query 'StackEvents[].{x: ResourceStatus, y: ResourceType}' \
             --output text | \
@@ -65,7 +59,7 @@ create_lambda_stack () {
     local STACK=$1
     local BUCKET=$2
     log "Creating stack $STACK"
-    local OUT=$( aws --region $LAMBDA_REGION cloudformation create-stack \
+    local OUT=$( aws cloudformation create-stack \
         --stack-name $LAMBDA_STACK \
         --capabilities CAPABILITY_IAM \
         --template-body file://sshephalopod.json \
@@ -78,14 +72,14 @@ create_lambda_stack () {
             "ParameterKey=CAKeyPairKeyname,ParameterValue=$KP_NAME"
 
     )
-    wait_completion $STACK $LAMBDA_REGION || return 1
+    wait_completion $STACK || return 1
 }
 
 update_lambda_stack () {
     local STACK=$1
     local BUCKET=$2
     log "Updating stack $STACK"
-    local OUT=$( aws --region $LAMBDA_REGION cloudformation update-stack \
+    local OUT=$( aws cloudformation update-stack \
         --stack-name $LAMBDA_STACK \
         --capabilities CAPABILITY_IAM \
         --template-body file://sshephalopod.json \
@@ -97,11 +91,11 @@ update_lambda_stack () {
             "ParameterKey=CAKeyPairBucket,ParameterValue=$KP_BUCKET" \
             "ParameterKey=CAKeyPairKeyname,ParameterValue=$KP_NAME"
     )
-    wait_completion $STACK $LAMBDA_REGION || return 1
+    wait_completion $STACK || return 1
 }
 
 # Create the stack of the Lambda function
-if [ -z "$( aws --region $LAMBDA_REGION cloudformation describe-stacks --stack-name $LAMBDA_STACK 2>/dev/null )" ]; then
+if [ -z "$( aws cloudformation describe-stacks --stack-name $LAMBDA_STACK 2>/dev/null )" ]; then
     create_lambda_stack $LAMBDA_STACK $BUCKET || die "Can't create stack"
 else
     update_lambda_stack $LAMBDA_STACK $BUCKET || die "Can't update stack"

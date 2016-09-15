@@ -10,16 +10,12 @@ SOURCES=SigningPreAuth.js \
 ZIP_ARGS="-9rq"
 REV=$(shell git show-ref --head -s ^HEAD)
 
-AWS_DEFAULT_REGION?=us-west-2
-AWS_LAMBDA_DEFAULT_REGION?=$(AWS_DEFAULT_REGION)
 AWS_LAMBDA_STACK_NAME?="sshephalopod"
 
 CONFIG_BUCKET?=sshephalopod-config-bucket-name
 DOMAIN?=sshephalopod-service-domain.com
 KEYPAIR_BUCKET?=sshephalopod-keypair-bucket
-API_ID?=something
 IDP_METADATA?=unknown
-API_ID=$(shell cat /tmp/api-gw.id )
 
 CONFIG=config.json
 KEYPAIR_NAME=$(DOMAIN)-sshephalopod-ca
@@ -39,7 +35,6 @@ upload: zip
 deploy: upload onlydeploy
 
 onlydeploy:
-	AWS_LAMBDA_DEFAULT_REGION=$(AWS_LAMBDA_DEFAULT_REGION) LAMBDA_STACK=$(AWS_LAMBDA_STACK_NAME) \
+	LAMBDA_STACK=$(AWS_LAMBDA_STACK_NAME) \
 		./deploy.sh $(CONFIG_BUCKET) $(ZIPFILE)-$(REV).zip \
 			$(IDP_METADATA) $(DOMAIN) $(KEYPAIR_BUCKET) $(KEYPAIR_NAME)
-
