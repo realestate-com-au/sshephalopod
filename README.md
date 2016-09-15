@@ -72,11 +72,10 @@ Do this whether you're deploying via Docker or via Makefile:
       sshephalopod CloudFormation stack is created.
     * `DOMAIN` to the DNS domain that this sshephalopod instance will serve
     * `CONFIG_BUCKET` to the name of an existing S3 bucket where the Lambda
-      code will be uploaded. The bucket must be in `us-west-2` at the moment
+      code will be uploaded.
     * `KEYPAIR_BUCKET` to the name of an existing S3 bucket where the
       ssh CA keypairs will be persisted, so that subsequent creations of
-      sshephalopod for the same domain will use the same keypair. This
-      bucket must also be in `us-west-2`
+      sshephalopod for the same domain will use the same keypair.
 
 #### Build-time dependencies
 
