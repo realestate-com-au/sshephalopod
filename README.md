@@ -127,6 +127,7 @@ which replaces the one-time example above.
 
 With a deployed sshephalopod and a configured Okta:
 
+* Ensure you're using gnu base64. If not, run `ln -s /usr/local/bin/gbase64 /usr/local/bin/base64`
 * Have an SSH public key in `$HOME/.ssh/id_rsa.pub`
 * Run the wrapper script:
 
