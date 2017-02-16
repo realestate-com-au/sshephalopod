@@ -56,8 +56,8 @@ find_sp_for_domain () {
 
     SRV=$( dig +short srv _sshephalopod-ca._tcp.$domain )
     if [ -n "$SRV" ]; then
-        SP=$( echo $SRV | awk '{ print $4 }' )
-        echo https://$SP/$STAGE/signing
+        SP=$( echo $SRV | awk '{ print $4 }' | sed -e 's/\.$//g')
+        echo https://$SP/signing
         return
     fi
 }
@@ -189,12 +189,13 @@ elif echo "$ASSERTION" | grep -q 'Authorization Required'; then
 fi
 
 # Encode the assertion for wrapping
-ASSERTION_ENCODED=$( echo -n "$ASSERTION" | base64 -w 0 )
+# Python 1 liner is Linux / OSX friendly 
+ASSERTION_ENCODED=$( echo -n "$ASSERTION" | python -c 'import base64, sys; print base64.b64encode(sys.stdin.read()),' )
 PUBKEY=$( awk '{ print $1, $2 }' < $SSH_KEY )
 case $GETTER in
     curl)
         echo "{\"SAMLResponse\":\"$ASSERTION_ENCODED\",\"SSHPublicKey\":\"$PUBKEY\",\"Username\":\"$UNAME\",\"Hostname\":\"$HOST\"}" > /tmp/foo
-        RESP=$( $GETTER $GETTER_ARGS \
+        RESP=$( $GETTER $GETTER_ARGS -H "Content-Type: application/json" \
                 -XPOST \
                 -d "{\"SAMLResponse\":\"$ASSERTION_ENCODED\",\"SSHPublicKey\":\"$PUBKEY\",\"Username\":\"$UNAME\",\"Hostname\":\"$HOST\"}" \
                 $ASSERTION_CONSUMER )
@@ -210,8 +211,9 @@ if [ $RET -ne 0 ]; then
     echo "Signing request failed ($RET): $RESP"
     exit 1
 elif echo "$RESP" | jq -e ".SignedKey" >/dev/null; then
-    echo "$RESP" | jq -r '.SignedKey' | base64 -d > $HOME/.ssh/id_rsa-cert.pub
-    echo "Signing request succeeded: please log in with 'ssh $UNAME@$HOST'"
+    # base64 Linux + OSX friendly 
+    echo "$RESP" | jq -r '.SignedKey' | base64 --decode > $HOME/.ssh/id_rsa-cert.pub
+    echo "Signing request succeeded: please log in with 'ssh $UNAME@configured-ec2-host'"
     echo "If you are using ssh-agent, please run 'ssh-add' now"
 else
     ERROR=$( echo "$RESP" | jq -r '.errorMessage' )

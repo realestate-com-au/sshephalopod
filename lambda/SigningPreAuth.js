@@ -13,7 +13,7 @@ var handler = function (event, context) {
 
     // construct the callback URL
     var callback = 'https://' + 
-        event['api-id'] + '.execute-api.' + 'us-west-2' + '.amazonaws.com/' +
+        event['api-id'] + '.execute-api.' + event['region'] + '.amazonaws.com/' +
         event.stage + event['resource-path'];
 
     var saml_options = {
