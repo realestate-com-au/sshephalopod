@@ -138,7 +138,7 @@
         "Handler": "SigningPreAuth.handler",
         "MemorySize": "128",
         "Role": { "Fn::GetAtt": [ "ExecutionRole", "Arn" ] },
-        "Runtime": "nodejs",
+        "Runtime": "nodejs4.3",
         "Timeout": "30"
       }
     },
@@ -154,7 +154,7 @@
         "Handler": "Metadata.handler",
         "MemorySize": "128",
         "Role": { "Fn::GetAtt": [ "ExecutionRole", "Arn" ] },
-        "Runtime": "nodejs",
+        "Runtime": "nodejs4.3",
         "Timeout": "30"
       }
     },
@@ -170,7 +170,7 @@
         "Handler": "SigningRequestPassport.handler",
         "MemorySize": "128",
         "Role": { "Fn::GetAtt": [ "ExecutionRole", "Arn" ] },
-        "Runtime": "nodejs",
+        "Runtime": "nodejs4.3",
         "Timeout": "60"
       }
     },
@@ -185,7 +185,7 @@
         "Handler": "CreateCAKeypair.handler",
         "MemorySize": "128",
         "Role": { "Fn::GetAtt": [ "ExecutionRole", "Arn" ] },
-        "Runtime": "nodejs",
+        "Runtime": "nodejs4.3",
         "Timeout": "30"
       }
     },
@@ -440,7 +440,7 @@
           ],
           "Type": "AWS",
           "RequestTemplates": {
-            "application/x-www-form-encoded": {
+            "application/json": {
               "Fn::Join": [
                 "",
                 [
@@ -449,10 +449,10 @@
                   "\"stage\":\"", "prod", "\",",
                   "\"IdpMetadataEndpoint\":\"", { "Ref": "IdpMetadataEndpoint" }, "\",",
                   "\"region\":\"", { "Ref": "AWS::Region" }, "\",",
-                  "\"resource-path\":\"", "/signing", "\"", 
-                  "\"KeypairBucket\":\"", { "Ref": "CAKeyPairBucket" }, "\"", 
-                  "\"KeypairName\":\"", { "Ref": "CAKeyPairKeyname" }, "\"", 
-                  "\"body\":\"", "$input.json('$')", "\"", 
+                  "\"resource-path\":\"", "/signing", "\",",
+                  "\"KeypairBucket\":\"", { "Ref": "CAKeyPairBucket" }, "\",", 
+                  "\"KeypairName\":\"", { "Ref": "CAKeyPairKeyname" }, "\",", 
+                  "\"body\": ", "$input.json('$')",
                   "}"
                 ]
               ]

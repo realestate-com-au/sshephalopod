@@ -182,9 +182,10 @@ exports.handler = function(event, context) {
             // by a group of which they are a member?
             if (!memberOf.some( function(d) {
                         return config.groups[d].some( function(x) {
-                            if (event.body.Username === x) {
+			    var User = new Buffer(event.body.Username).toString();
+                            if (User === x) {
                                 console.log(x, "is allowed by inclusion in ", d);
-                                return (event.body.Username === x);
+                                return (User === x);
                             }
                         })
                     }))
@@ -227,6 +228,7 @@ exports.handler = function(event, context) {
             var thing = fs.readFileSync(path.join(tempdir, 'pubkey')).toString();
             console.log("SSH key is: " + thing);
 
+	    var User = new Buffer(event.body.Username).toString();
             var now = new Date();
             var args = [
                 './ssh-keygen',
@@ -234,7 +236,7 @@ exports.handler = function(event, context) {
                 '-V', '+' + DURATION + 's',
                 '-z', now.getTime(),
                 '-I', realName,
-                '-n', event.body.Username,
+                '-n', User,
             ].concat(SSH_OPTIONS).concat(['pubkey']);
 
             process.env.LD_LIBRARY_PATH = tempdir;
