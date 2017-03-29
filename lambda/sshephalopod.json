@@ -190,45 +190,6 @@
       }
     },
 
-    "CAKeyPair": {
-      "Type": "Custom::GeneratedCAKeyPair",
-      "Properties": {
-        "ServiceToken": { "Fn::GetAtt": [ "SSHephalopodKeyPair", "Arn" ] },
-        "Bucket": { "Ref": "CAKeyPairBucket" },
-        "Key": { "Ref": "CAKeyPairKeyname" },
-        "MeaninglessThings": "cheese"
-      }
-    },
-
-    "SSHephalopodTXT": {
-      "Type": "AWS::Route53::RecordSet",
-      "Properties": {
-        "Comment": "DNS records for sshephalopod",
-        "HostedZoneName": {
-          "Fn::Join": [
-            "",
-            [ { "Ref": "DNSDomain" }, "." ]
-          ]
-        },
-        "Name": {
-          "Fn::Join": [
-            "",
-            [ "sshephalopod-ca-cert", ".", { "Ref": "DNSDomain" }, "." ]
-          ]
-        },
-        "Type": "TXT",
-        "TTL": "300",
-        "ResourceRecords": [
-          { "Fn::Join": [
-            "", [
-              "\"",
-              { "Fn::GetAtt": [ "CAKeyPair", "PublicKey" ] },
-              "\""
-            ]
-          ]}
-        ]
-      }
-    },
 
     "SSHephalopodSRV": {
       "Type": "AWS::Route53::RecordSet",
@@ -485,7 +446,6 @@
   },
 
   "Outputs": {
-    "CAPublicKey": { "Value": { "Fn::GetAtt": [ "CAKeyPair", "PublicKey" ] } },
     "GenerateMetadata": { "Value": { "Fn::GetAtt": [ "GenerateMetadata", "Arn" ] } },
     "SigningRequest": { "Value": { "Fn::GetAtt": [ "SigningRequestPassport", "Arn" ] } },
     "SigningPreAuth": { "Value": { "Fn::GetAtt": [ "SigningPreAuth", "Arn" ] } },

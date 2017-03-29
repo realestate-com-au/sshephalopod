@@ -1,0 +1,69 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "SSHephalopod is an SSH Certificate Authority",
+
+  "Parameters": {
+    "DNSDomain": {
+      "Description": "The DNS domain that will be hosting sshephalopod",
+      "Type": "String"
+    },
+    "CAKeyPairBucket": {
+      "Description": "The name of the S3 bucket that will store the CA keypair",
+      "Type": "String"
+    },
+    "CAKeyPairKeyname": {
+      "Description": "The name of the keypair in the S3 bucket",
+      "Type": "String"
+    },
+    "MakeKeypairFunctionARN": {
+      "Description": "ARN of the lambda function that creates a keypair",
+      "Type": "String"
+    }
+  },
+
+  "Resources": {
+    "CAKeyPair": {
+      "Type": "Custom::GeneratedCAKeyPair",
+      "Properties": {
+        "ServiceToken": {"Ref":"MakeKeypairFunctionARN"},
+        "Bucket": { "Ref": "CAKeyPairBucket" },
+        "Key": {"Fn::Join": [ "", [{ "Ref": "CAKeyPairKeyname" }, ".", {"Ref":"DNSDomain"}, "-sshephalopod-ca" ] ] },
+        "MeaninglessThings": "cheese"
+      }
+    },
+
+    "SSHephalopodTXT": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "Comment": "DNS records for sshephalopod",
+        "HostedZoneName": {
+          "Fn::Join": [
+            "",
+            [ { "Ref": "DNSDomain" }, "." ]
+          ]
+        },
+        "Name": {
+          "Fn::Join": [
+            "",
+            [ "sshephalopod-ca-cert", ".", {"Ref":"CAKeyPairKeyname"}, ".", { "Ref": "DNSDomain" }, "." ]
+          ]
+        },
+        "Type": "TXT",
+        "TTL": "300",
+        "ResourceRecords": [
+          { "Fn::Join": [
+            "", [
+              "\"",
+              { "Fn::GetAtt": [ "CAKeyPair", "PublicKey" ] },
+              "\""
+            ]
+          ]}
+        ]
+      }
+    }
+  },
+
+  "Outputs": {
+    "CAPublicKey": { "Value": { "Fn::GetAtt": [ "CAKeyPair", "PublicKey" ] } }
+  }
+}
