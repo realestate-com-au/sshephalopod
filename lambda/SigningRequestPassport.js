@@ -62,7 +62,7 @@ exports.handler = function(event, context) {
 
 
     var bucketName = event.KeypairBucket;
-    var keyName = event.KeypairName;
+    var keyName = event.body.Hostname + "-sshephalopod-ca";
     var realName = 'REAL-NAME-HERE';
     var tempdir;
     var db_params = {
@@ -92,6 +92,7 @@ exports.handler = function(event, context) {
         },
         function parseConfig(cfgJSON, next) {
             config = JSON.parse(cfgJSON);
+            config = config[event.body.Hostname];
 
             // check some basic things
             if (parseInt(config.signatureDuration)) {

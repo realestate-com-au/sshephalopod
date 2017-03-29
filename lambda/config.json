@@ -1,12 +1,26 @@
 {
-  "sshOptions": [
-    "no-agent-forwarding",
-    "no-user-rc",
-    "no-x11-forwarding"
-  ],
-  "signatureDuration": 43200,
-  "groups": {
-    "GroupName1": [ "ec2-user", "ubuntu" ],
-    "GroupName2": [ "ec2-user" ]
-  }
+	"ca-number-one.example.com": {
+		"sshOptions": [
+			"no-agent-forwarding",
+			"no-user-rc",
+			"no-x11-forwarding"
+		],
+		"signatureDuration": 43200,
+		"groups": {
+			"GroupName1": [ "ec2-user", "ubuntu" ],
+			"GroupName2": [ "ec2-user", "ubuntu" ]
+		}
+	},
+	"ca-number-two.example.com": {
+		"sshOptions": [
+			"no-agent-forwarding",
+			"no-user-rc",
+			"no-x11-forwarding"
+		],
+		"signatureDuration": 43200,
+		"groups": {
+			"GroupName1": [ "ec2-user", "ubuntu" ],
+			"GroupName2": [ "ec2-user", "ubuntu" ]
+		}
+	}
 }
