@@ -92,7 +92,15 @@ exports.handler = function(event, context) {
         },
         function parseConfig(cfgJSON, next) {
             config = JSON.parse(cfgJSON);
-            config = config[event.body.Hostname];
+            if (event.body.Hostname in config["aliases"]) {
+              console.log(event.body.Hostname + " is an alias for " + config["aliases"][event.body.Hostname]);
+              config = config[config["aliases"][event.body.Hostname]];
+            } else {
+              config = config[event.body.Hostname];
+            }
+
+            console.log("Effective Configuration:", JSON.stringify(config));
+
 
             // check some basic things
             if (parseInt(config.signatureDuration)) {
