@@ -1,4 +1,7 @@
 {
+	"aliases": {
+		"another-ca.example.com": "ca-number-one.example.com"
+	},
 	"ca-number-one.example.com": {
 		"sshOptions": [
 			"no-agent-forwarding",
