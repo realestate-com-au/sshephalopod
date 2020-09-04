@@ -13,7 +13,7 @@
     "xmldom": "^0.1.19",
     "xpath": "^0.0.9",
     "temp": "^0.8.3",
-    "saml2-js": "^1.0.2"
+    "saml2-js": "^2.0.5"
   },
   "devDependencies": {
     "mocha": "^2.4.5",
