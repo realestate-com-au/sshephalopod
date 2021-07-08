@@ -62,7 +62,7 @@ exports.handler = function(event, context) {
 
 
     var bucketName = event.KeypairBucket;
-    var keyName = event.KeypairName;
+    var keyName = event.body.Hostname + "-sshephalopod-ca";
     var realName = 'REAL-NAME-HERE';
     var tempdir;
     var db_params = {
@@ -92,6 +92,15 @@ exports.handler = function(event, context) {
         },
         function parseConfig(cfgJSON, next) {
             config = JSON.parse(cfgJSON);
+            if (event.body.Hostname in config["aliases"]) {
+              console.log(event.body.Hostname + " is an alias for " + config["aliases"][event.body.Hostname]);
+              config = config[config["aliases"][event.body.Hostname]];
+            } else {
+              config = config[event.body.Hostname];
+            }
+
+            console.log("Effective Configuration:", JSON.stringify(config));
+
 
             // check some basic things
             if (parseInt(config.signatureDuration)) {
